@@ -16,4 +16,28 @@ export default class NoteService {
     async getNotesByUserId(userId){
         return await this.noteRepository.findByUserId(userId);
     }
+
+    async updateNote(id, data) {
+        if (!id) throw new Error("Id is required");
+
+        const updatedNote = await this.noteRepository.update(id, data);
+
+        if (!updatedNote) {
+            throw new Error("Note not found");
+        }
+
+        return updatedNote;
+    }
+
+    async deleteNote(id) {
+        if (!id) throw new Error("Id is required");
+
+        const deleted = await this.noteRepository.delete(id);
+
+        if (!deleted) {
+            throw new Error("Note not found");
+        }
+
+        return { message: "Note deleted successfully" };
+    }
 }

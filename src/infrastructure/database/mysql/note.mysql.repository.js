@@ -20,4 +20,22 @@ export default class NoteMySQLRepository {
             where: { userId }
         });
     }
+
+    async update(id, data) {
+        const note = await NoteModel.findByPk(id);
+
+        if (!note) return null;
+
+        await note.update(data);
+        return note.toJSON();
+    }
+
+    async delete(id) {
+        const note = await NoteModel.findByPk(id);
+
+        if (!note) return false;
+
+        await note.destroy();
+        return true;
+    }
 }
