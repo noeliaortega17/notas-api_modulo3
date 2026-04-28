@@ -21,6 +21,11 @@ export default class NoteMySQLRepository {
         });
     }
 
+    async findById(id) {
+        const note = await NoteModel.findByPk(id);
+        return note ? note.toJSON() : null;
+    }
+
     async update(id, data) {
         const note = await NoteModel.findByPk(id);
 
