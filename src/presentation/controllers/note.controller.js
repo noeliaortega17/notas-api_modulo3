@@ -4,64 +4,152 @@ export default class NoteController {
     }
 
     createNote = async (req, res) => {
-        const data = req.body;
-        if (req.file) data.imageUrl = '/uploads/' + req.file.filename;
-        data.userId = req.user.id;  
         try {
+            const data = req.body;
+            if (req.file) data.imageUrl = '/uploads/' + req.file.filename;
+            data.userId = req.user.id;
+
             const note = await this.noteService.createNote(data);
-            res.status(201).json(note); // 201 Created
+
+            res.status(201).json({
+                success: true,
+                data: note
+            });
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            res.status(400).json({
+                success: false,
+                error: {
+                    title: "Bad Request",
+                    description: error.message
+                }
+            });
         }
-    }
+    };
 
     getNotesByUserId = async (req, res) => {
-        const userId = req.user.id;;
         try {
-            const notes = await this.noteService.getNotesByUserId(userId);
-            res.status(200).json(notes); // 200 OK
+            const notes = await this.noteService.getNotesByUserId(req.user.id);
+
+            res.status(200).json({
+                success: true,
+                data: notes
+            });
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            res.status(500).json({
+                success: false,
+                error: {
+                    title: "Internal Server Error",
+                    description: error.message
+                }
+            });
         }
-    }
+    };
 
     updateNote = async (req, res) => {
-        const { id } = req.params;
-        const data = req.body;
-
-        if (req.file) data.imageUrl = '/uploads/' + req.file.filename;
-
         try {
+            const { id } = req.params;
+            const data = req.body;
+
+            if (req.file) data.imageUrl = '/uploads/' + req.file.filename;
+
             const updatedNote = await this.noteService.updateNote(id, data);
-            res.status(200).json(updatedNote);
+
+            res.status(200).json({
+                success: true,
+                data: updatedNote
+            });
+
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            if (error.message === "Note not found") {
+                return res.status(404).json({
+                    success: false,
+                    error: {
+                        title: "Not Found",
+                        description: error.message
+                    }
+                });
+            }
+
+            res.status(400).json({
+                success: false,
+                error: {
+                    title: "Bad Request",
+                    description: error.message
+                }
+            });
         }
-    }
+    };
 
     deleteNote = async (req, res) => {
-        const { id } = req.params;
-
         try {
-            const result = await this.noteService.deleteNote(id);
-            res.status(200).json(result);
+            await this.noteService.deleteNote(req.params.id);
+
+            res.status(204).send();
+
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            res.status(404).json({
+                success: false,
+                error: {
+                    title: "Not Found",
+                    description: error.message
+                }
+            });
         }
-    }
+    };
 
     shareNote = async (req, res) => {
-        const { id } = req.params;
         const { email } = req.body;
-        const currentUserId = req.user.id;
 
-        if (!email) return res.status(400).json({ error: "Target email is required" });
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    title: "Bad Request",
+                    description: "Target email is required"
+                }
+            });
+        }
 
         try {
-            const result = await this.noteService.shareNoteByEmail(id, email, currentUserId);
-            res.status(200).json(result);
+            const result = await this.noteService.shareNoteByEmail(
+                req.params.id,
+                email,
+                req.user.id
+            );
+
+            res.status(200).json({
+                success: true,
+                data: result
+            });
+
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            if (error.message.includes("not found")) {
+                return res.status(404).json({
+                    success: false,
+                    error: {
+                        title: "Not Found",
+                        description: error.message
+                    }
+                });
+            }
+
+            if (error.message.includes("Unauthorized")) {
+                return res.status(403).json({
+                    success: false,
+                    error: {
+                        title: "Forbidden",
+                        description: error.message
+                    }
+                });
+            }
+
+            res.status(400).json({
+                success: false,
+                error: {
+                    title: "Bad Request",
+                    description: error.message
+                }
+            });
         }
-    }
+    };
 }
